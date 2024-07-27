@@ -1,17 +1,19 @@
 package com.example.controlremotohc05
 
 import android.Manifest
-import android.R
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.*
-import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+import android.widget.ArrayAdapter
+import android.widget.Spinner
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.example.controlremotohc05.databinding.ActivityMainBinding
@@ -34,16 +36,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lateinit var binding: ActivityMainBinding
-        binding = ActivityMainBinding.inflate(layoutInflater)
+        val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        adaptadorDirecciones = ArrayAdapter(this, R.layout.simple_list_item_1)
-        adaptadorNombres = ArrayAdapter(this, R.layout.simple_list_item_1)
-
+        adaptadorDirecciones = ArrayAdapter(this, android.R.layout.simple_list_item_1)
+        adaptadorNombres = ArrayAdapter(this, android.R.layout.simple_list_item_1)
 
         val launcherResultado = registerForActivityResult(
-            StartActivityForResult()
+            ActivityResultContracts.StartActivityForResult()
         ) { resultado ->
             if (resultado.resultCode == SOLICITAR_ACTIVAR_BT) {
                 Log.i("MainActivity", "ACTIVIDAD REGISTRADA")
@@ -53,130 +53,61 @@ class MainActivity : AppCompatActivity() {
         adaptadorBluetooth = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
 
         if (adaptadorBluetooth == null) {
-            Toast.makeText(this, "Bluetooth no está disponible en este dispositivo", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Bluetooth no está disponible en este dispositivo", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Bluetooth está disponible en este dispositivo", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Bluetooth está disponible en este dispositivo", Toast.LENGTH_SHORT).show()
         }
 
         binding.activar.setOnClickListener {
             if (adaptadorBluetooth.isEnabled) {
-
-                Toast.makeText(this, "Bluetooth ya se encuentra activado", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Bluetooth ya se encuentra activado", Toast.LENGTH_SHORT).show()
             } else {
-
                 val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                if (ActivityCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    Log.i("MainActivity", "ActivityCompat#requestPermissions")
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1)
+                } else {
+                    launcherResultado.launch(enableBtIntent)
                 }
-                launcherResultado.launch(enableBtIntent)
             }
         }
 
-        //Boton apagar bluetooth
         binding.desactivar.setOnClickListener {
             if (!adaptadorBluetooth.isEnabled) {
-
-                Toast.makeText(this, "Bluetooth ya se encuentra desactivado", Toast.LENGTH_LONG).show()
-            } else {
-
-                adaptadorBluetooth.disable()
-                Toast.makeText(this, "Se ha desactivado el bluetooth", Toast.LENGTH_LONG).show()
-            }
-        }
-
-        binding.botonblue.setOnClickListener {
-            if (adaptadorBluetooth.isEnabled) {
-                Toast.makeText(this, "Bluetooth ya se encuentra activado", Toast.LENGTH_LONG).show()
-            } else {
-                val intentActivarBluetooth = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                if (ActivityCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    Log.i("MainActivity", "ActivityCompat#requestPermissions")
-                }
-                launcherResultado.launch(intentActivarBluetooth)
-            }
-        }
-
-        binding.botonblue.setOnClickListener {
-            if (!adaptadorBluetooth.isEnabled) {
-                Toast.makeText(this, "Bluetooth ya se encuentra desactivado", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Bluetooth ya se encuentra desactivado", Toast.LENGTH_SHORT).show()
             } else {
                 adaptadorBluetooth.disable()
-                Toast.makeText(this, "Se ha desactivado el Bluetooth", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Se ha desactivado el Bluetooth", Toast.LENGTH_SHORT).show()
             }
         }
 
         binding.botonblue.setOnClickListener {
-            if (adaptadorBluetooth.isEnabled) {
-                val dispositivosEmparejados: Set<BluetoothDevice>? = adaptadorBluetooth.bondedDevices
-                adaptadorDirecciones!!.clear()
-                adaptadorNombres!!.clear()
-
-                dispositivosEmparejados?.forEach { dispositivo ->
-                    val nombreDispositivo = dispositivo.name
-                    val direccionDispositivo = dispositivo.address // MAC address
-                    adaptadorDirecciones!!.add(direccionDispositivo)
-                    adaptadorNombres!!.add(nombreDispositivo)
-                }
-
-                binding.spinDispositivos.adapter = adaptadorNombres
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1)
             } else {
-                val sinDispositivos = "Ningún dispositivo pudo ser emparejado"
-                adaptadorDirecciones!!.add(sinDispositivos)
-                adaptadorNombres!!.add(sinDispositivos)
-                Toast.makeText(this, "Primero vincule un dispositivo Bluetooth", Toast.LENGTH_LONG).show()
+                listarDispositivosEmparejados()
             }
         }
 
-        binding.botonblue.setOnClickListener {
-            try {
-                if (socketBluetooth == null || !conectado) {
-                    val posicionSpin = binding.spinDispositivos.selectedItemPosition
-                    direccionDispositivo = adaptadorDirecciones!!.getItem(posicionSpin).toString()
-                    Toast.makeText(this, direccionDispositivo, Toast.LENGTH_LONG).show()
-                    adaptadorBluetooth.cancelDiscovery()
-                    val dispositivo: BluetoothDevice = adaptadorBluetooth.getRemoteDevice(direccionDispositivo)
-                    socketBluetooth = dispositivo.createInsecureRfcommSocketToServiceRecord(UUID_SERVICIO)
-                    socketBluetooth!!.connect()
-                }
+        binding.up.setOnClickListener { enviarComando("A") }
+        binding.stop.setOnClickListener { enviarComando("P") }
+        binding.down.setOnClickListener { enviarComando("B") }
+        binding.left.setOnClickListener { enviarComando("I") }
+        binding.right.setOnClickListener { enviarComando("D") }
+    }
 
-                Toast.makeText(this, "CONEXIÓN EXITOSA", Toast.LENGTH_LONG).show()
-                Log.i("MainActivity", "CONEXIÓN EXITOSA")
+    private fun listarDispositivosEmparejados() {
+        val dispositivosEmparejados: Set<BluetoothDevice>? = adaptadorBluetooth.bondedDevices
+        adaptadorDirecciones?.clear()
+        adaptadorNombres?.clear()
 
-            } catch (e: IOException) {
-                e.printStackTrace()
-                Toast.makeText(this, "ERROR DE CONEXIÓN", Toast.LENGTH_LONG).show()
-                Log.i("MainActivity", "ERROR DE CONEXIÓN")
-            }
+        dispositivosEmparejados?.forEach { dispositivo ->
+            val nombreDispositivo = dispositivo.name
+            val direccionDispositivo = dispositivo.address // MAC address
+            adaptadorDirecciones?.add(direccionDispositivo)
+            adaptadorNombres?.add(nombreDispositivo)
         }
 
-        binding.up.setOnClickListener {
-            enviarComando("A")
-        }
-
-        binding.stop.setOnClickListener {
-            enviarComando("P")
-        }
-
-        binding.down.setOnClickListener {
-            enviarComando("B")
-        }
-
-        binding.left.setOnClickListener {
-            enviarComando("I")
-        }
-
-        binding.right.setOnClickListener {
-            enviarComando("D")
-        }
-
+        findViewById<Spinner>(R.id.spinDispositivos).adapter = adaptadorNombres
     }
 
     private fun enviarComando(comando: String) {
@@ -191,4 +122,16 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "No hay conexión Bluetooth establecida", Toast.LENGTH_SHORT).show()
         }
     }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1) {
+            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                Toast.makeText(this, "Permiso concedido", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Permiso denegado", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 }
+//ffff

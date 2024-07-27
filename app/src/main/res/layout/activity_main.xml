@@ -6,7 +6,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:background="#04400E">
+    android:background="@drawable/fondoboton1">
+
+    <ImageView
+        android:id="@+id/circuito"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/circuit2" />
 
     <TextView
         android:id="@+id/titulo"
@@ -18,7 +25,7 @@
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="10dp"
         android:textColor="#FFFFFF"
-        android:textSize="20sp"
+        android:textSize="25sp"
         android:textStyle="bold" />
 
     <ImageView
@@ -31,15 +38,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/titulo" />
 
-    <androidx.appcompat.widget.AppCompatButton
+    <com.example.controlremotohc05.EfectoBoton
         android:id="@+id/activar"
-        android:layout_width="120dp"
+        android:layout_width="145dp"
         android:layout_height="50dp"
         android:background="@drawable/fondoboton3"
         android:text="ACTIVAR"
         android:textStyle="bold"
+        android:gravity="center"
         android:textColor="#FFFFFF"
-        android:textSize="17dp"
+        android:textSize="20dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/desactivar"
         app:layout_constraintTop_toBottomOf="@id/controlblue"
@@ -47,29 +55,31 @@
         android:layout_marginStart="30dp"
         />
 
-    <androidx.appcompat.widget.AppCompatButton
+    <com.example.controlremotohc05.EfectoBoton
         android:id="@+id/desactivar"
-        android:layout_width="120dp"
+        android:layout_width="145dp"
         android:layout_height="50dp"
         android:background="@drawable/fondoboton2"
         android:text="DESACTIVAR"
+        android:gravity="center"
         android:textColor="@color/white"
-        android:textSize="17dp"
+        android:textSize="20dp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/activar"
         app:layout_constraintTop_toTopOf="@+id/activar"
         android:layout_marginEnd="30dp"/>
 
-    <androidx.appcompat.widget.AppCompatButton
+    <com.example.controlremotohc05.EfectoBoton
         android:id="@+id/botonblue"
         android:layout_width="120dp"
         android:layout_height="50dp"
         android:layout_marginTop="10dp"
         android:background="@drawable/fondoboton4"
         android:text="Buscar Dispositivos"
-        android:textColor="#C8C5C5"
-        android:textSize="15sp"
+        android:textColor="#FFFFFF"
+        android:gravity="center"
+        android:textSize="19sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginStart="20dp"
@@ -84,13 +94,14 @@
         app:layout_constraintStart_toEndOf="@+id/botonblue"
         app:layout_constraintTop_toTopOf="@+id/botonblue" />
 
-    <androidx.appcompat.widget.AppCompatButton
+    <com.example.controlremotohc05.EfectoBoton
         android:id="@+id/conectar"
         android:layout_width="120dp"
         android:layout_height="45dp"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/fondoboton3"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/fondobotonespecial"
         android:text="Conectar"
+        android:gravity="center"
         android:textColor="@color/white"
         android:textSize="20sp"
         android:textStyle="bold"
