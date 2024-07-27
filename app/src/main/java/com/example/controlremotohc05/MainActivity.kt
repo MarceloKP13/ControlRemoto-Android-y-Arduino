@@ -1,13 +1,13 @@
 package com.example.controlremotohc05
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.ArrayAdapter
@@ -30,7 +30,6 @@ class MainActivity : AppCompatActivity() {
         var UUID_SERVICIO: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
         private var socketBluetooth: BluetoothSocket? = null
         var conectado: Boolean = false
-        lateinit var direccionDispositivo: String
         const val SOLICITAR_ACTIVAR_BT = 1
     }
 
@@ -63,28 +62,29 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Bluetooth ya se encuentra activado", Toast.LENGTH_SHORT).show()
             } else {
                 val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1)
-                } else {
+                if (verificarPermisosBluetooth()) {
                     launcherResultado.launch(enableBtIntent)
+                } else {
+                    solicitarPermisosBluetooth()
                 }
             }
         }
 
-        binding.desactivar.setOnClickListener {
-            if (!adaptadorBluetooth.isEnabled) {
-                Toast.makeText(this, "Bluetooth ya se encuentra desactivado", Toast.LENGTH_SHORT).show()
+        binding.botonblue.setOnClickListener {
+            if (verificarPermisosBluetooth()) {
+                listarDispositivosEmparejados()
             } else {
-                adaptadorBluetooth.disable()
-                Toast.makeText(this, "Se ha desactivado el Bluetooth", Toast.LENGTH_SHORT).show()
+                solicitarPermisosBluetooth()
             }
         }
 
-        binding.botonblue.setOnClickListener {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1)
+        binding.conectar.setOnClickListener {
+            val selectedDeviceAddress = binding.spinDispositivos.selectedItem.toString()
+            if (selectedDeviceAddress.isNotEmpty()) {
+                val dispositivo = adaptadorBluetooth.getRemoteDevice(selectedDeviceAddress)
+                conectarDispositivo(dispositivo)
             } else {
-                listarDispositivosEmparejados()
+                Toast.makeText(this, "Seleccione un dispositivo", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -95,6 +95,7 @@ class MainActivity : AppCompatActivity() {
         binding.right.setOnClickListener { enviarComando("D") }
     }
 
+    @SuppressLint("MissingPermission")
     private fun listarDispositivosEmparejados() {
         val dispositivosEmparejados: Set<BluetoothDevice>? = adaptadorBluetooth.bondedDevices
         adaptadorDirecciones?.clear()
@@ -110,6 +111,28 @@ class MainActivity : AppCompatActivity() {
         findViewById<Spinner>(R.id.spinDispositivos).adapter = adaptadorNombres
     }
 
+    private fun conectarDispositivo(dispositivo: BluetoothDevice) {
+        if (verificarPermisosBluetooth()) {
+            try {
+                socketBluetooth = dispositivo.createRfcommSocketToServiceRecord(UUID_SERVICIO)
+                socketBluetooth?.connect()
+                conectado = true
+                Toast.makeText(this, "Conectado a ${dispositivo.name}", Toast.LENGTH_SHORT).show()
+            } catch (e: IOException) {
+                e.printStackTrace()
+                Toast.makeText(this, "Error al conectar con ${dispositivo.name}: ${e.message}", Toast.LENGTH_LONG).show()
+                try {
+                    socketBluetooth?.close()
+                } catch (closeException: IOException) {
+                    closeException.printStackTrace()
+                }
+            }
+        } else {
+            solicitarPermisosBluetooth()
+            Toast.makeText(this, "Permiso de Bluetooth no concedido", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun enviarComando(comando: String) {
         if (socketBluetooth != null) {
             try {
@@ -123,10 +146,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun verificarPermisosBluetooth(): Boolean {
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun solicitarPermisosBluetooth() {
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN), 1)
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1) {
-            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                 Toast.makeText(this, "Permiso concedido", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Permiso denegado", Toast.LENGTH_SHORT).show()
@@ -134,4 +166,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
-//ffff
+
